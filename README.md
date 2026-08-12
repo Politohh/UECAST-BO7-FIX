@@ -1,6 +1,27 @@
-# UECAST-BO7-FIX
+<h1 align="center">
+  <br>
+  UECAST BO7 FIX
+  <br>
+</h1>
 
-Fixes UECast's broken semantic-based material/texture import for BO7 models in Unreal Engine 5.
+<h4 align="center">Fixes UECast's broken semantic-based material/texture import for BO7 models in Unreal Engine 5.</h4>
+
+<div align="center">
+  <a href="https://github.com/Politohh/UECAST-BO7-FIX/releases"><img src="https://img.shields.io/github/downloads/Politohh/UECAST-BO7-FIX/total"></a>
+  <a href="https://paypal.me/politoggs"><img src="https://img.shields.io/badge/Donate-Paypal-orange?style=flat-square"></a>
+</div>
+
+<p align="center">
+  <a href="#the-problem">The problem</a> •
+  <a href="#how-it-works">How it works</a> •
+  <a href="#requirements">Requirements</a> •
+  <a href="#installation">Installation</a> •
+  <a href="#usage">Usage</a> •
+  <a href="#known-limitations">Known limitations</a> •
+  <a href="#credits">Credits</a>
+</p>
+
+---
 
 ## The problem
 
@@ -12,45 +33,54 @@ For Black Ops 7, that semantic table changed upstream, and UECast's own table (h
 - `colorMap` is frequently left empty
 - Textures can also get imported with the wrong compression settings / sRGB flag, since UECast decides those from the same stale table
 
-None of this is a bug in Saluki's export — it labels what it doesn't know generically (`unk_semantic_X`, `extra0`...`extraN`) rather than guessing wrong. The mislabeling happens entirely on UECast's side. Confirmed with the UECast author: this isn't planned to be fixed upstream, so this repo works around it instead.
+None of this is a bug in Saluki's export — it labels what it doesn't know generically (`unk_semantic_X`, `extra0`...`extraN`) rather than guessing wrong. The mislabeling happens entirely on UECast's side. Confirmed with the UECast author: this isn't planned to be fixed upstream, hence this repo.
 
-## The fix
+---
 
-Rather than trying to patch UECast's semantic table (which turned out to be inconsistent across different shader techsets — the same numeric semantic means different things depending on which shader a given part uses), this takes a different approach:
+## How it works
 
-1. **Read ground truth, not the semantic table.** UECast's mislabeling is wrong but *consistent* on a given project: the real color source reliably ends up in `nogMap`, and the real NOG source reliably ends up in `emissiveMap`. This script reads directly off those bindings instead of trusting what UECast *named* them.
-2. **Re-derive the actual channel data from source**, rather than trying to reassign already-imported (and possibly already-mis-compressed) textures. The real NOG/albedo source files are hash-matched back to their raw exports on disk and run through a faithful Python port of [GameImageUtil](https://github.com/Scobalula/GameImageUtil)'s CoD-specific channel-split algorithms (ported directly from GameImageUtil's own source, with attribution — see [Credits](#credits)).
-3. **Convert every material to a simpler parent** (`CoDBase`, exposing just `colorMap`/`normalMap`) so nothing ever depends on UECast's semantic guessing again.
+Rather than patching UECast's semantic table (which turned out to be inconsistent across shader techsets — the same numeric semantic means different things depending on which shader a given part uses), this takes a different approach:
 
-## What it does, step by step
+- **Reads ground truth, not the semantic table.** UECast's mislabeling is wrong but *consistent* on a given project: the real color source reliably ends up bound to `nogMap`, and the real NOG source reliably ends up bound to `emissiveMap`. This reads directly off those bindings instead of trusting what UECast *named* them.
+- **Re-derives the actual channel data from source**, rather than reassigning already-imported (and possibly already-mis-compressed) textures. The real NOG/albedo source files are hash-matched back to their raw exports on disk and run through a faithful Python port of [GameImageUtil](https://github.com/Scobalula/GameImageUtil)'s CoD-specific channel-split algorithms — ported directly from GameImageUtil's own source, with attribution (see [Credits](#credits)).
+- **Converts every material to a simpler parent** (`CoDBase`, exposing just `colorMap`/`normalMap`) so nothing ever depends on UECast's semantic guessing again.
 
-Given a SkeletalMesh already imported via UECast:
+Given a SkeletalMesh already imported via UECast, the full pipeline:
 
 1. Scans every Material Instance on the mesh, reads whatever's bound to `nogMap` (→ real color source) and `emissiveMap` (→ real NOG source), and copies the matching raw export files (matched by hash, tolerant of minor filename differences) into `_gameimageutil_staging/_color/` and `_gameimageutil_staging/_nog/` next to the model's export folder.
 2. Runs those staged files through the actual NOG-decode and specular/albedo-split math (hemi-octahedron normal reconstruction, metalness-based color/spec separation) — no GameImageUtil GUI required.
 3. Imports the results, sets correct compression/sRGB on the normal map, swaps every material's parent to `CoDBase`, and wires up `colorMap`/`normalMap`.
 
-Everything after selecting the mesh is automatic — one folder picker for the model's disk export location, then it runs end to end.
+Everything after selecting the mesh is automatic — one folder picker for the model's disk export location, then it runs end to end, in the background so the editor stays responsive.
+
+---
 
 ## Requirements
 
-- Unreal Engine 5 with [UECast](https://github.com/o-Astral-o/UECast) installed
-- A `CoDBase` material (or your own equivalent) exposing `colorMap` and `normalMap` texture parameters
-- Python 3 with `numpy` and `Pillow` installed and available as `python` in a normal terminal on the same machine:
+- **Unreal Engine 5** with [UECast](https://github.com/o-Astral-o/UECast) installed
+- A **CoDBase** material (or your own equivalent) exposing `colorMap` and `normalMap` texture parameters
+- **Python 3.x** with `numpy` and `Pillow`, available as `python` in a normal terminal on the same machine:
   ```
   pip install numpy pillow
   ```
-- Windows (the folder picker uses a native Windows dialog via PowerShell)
+- **Windows** (the folder picker uses a native Windows dialog via PowerShell)
 
-## Setup
+---
 
-1. Put `UECAST-BO7-FIX.py` and `cod_texture_split.py` in the same folder.
-2. Open `UECAST-BO7-FIX.py` and edit the config block near the top:
+## Installation
+
+1. Download the [latest release](https://github.com/Politohh/UECAST-BO7-FIX/releases)
+2. Place these files all in the same folder:
+   - `UECAST-BO7-FIX.py`
+   - `cod_texture_split.py`
+3. Open `UECAST-BO7-FIX.py` and edit the config block near the top:
    ```python
    PYCONVERT_DIR = r"C:\path\to\the\folder\with\both\scripts"
    CODBASE_MATERIAL = "/Game/Path/To/Your/CoDBase.CoDBase"
-   DEFAULT_BROWSE_ROOT = r"C:\path\to\your\Saluki\exports"  # just where the folder picker starts, not a hard requirement
+   DEFAULT_BROWSE_ROOT = r"C:\path\to\your\Saluki\exports"  # just where the folder picker starts
    ```
+
+---
 
 ## Usage
 
@@ -69,6 +99,8 @@ Everything after selecting the mesh is automatic — one folder picker for the m
 python cod_texture_split.py "<path to a _gameimageutil_staging folder>"
 ```
 
+---
+
 ## Known limitations
 
 - Assumes the `nogMap` → real color / `emissiveMap` → real NOG pattern holds. This was consistent across every model tested, but a different shader techset could theoretically break that assumption — if a converted material comes out wrong, check what's actually bound to those two slots before assuming the script is at fault.
@@ -76,12 +108,15 @@ python cod_texture_split.py "<path to a _gameimageutil_staging folder>"
 - If a texture's alpha channel carries no real per-pixel data (some exports have it flattened to a constant), the specular/albedo split falls back to passing RGB straight through rather than applying the metalness math, which would otherwise force the whole texture to black.
 - Tested specifically on BO7 exports. Other post-IW8 titles weren't verified.
 
+---
+
 ## Credits
 
-- [GameImageUtil](https://github.com/Scobalula/GameImageUtil) by Scobalula — `cod_texture_split.py` is a direct Python port of GameImageUtil's `CoDNOGProcessor` and `CoDFusedCSProcessor`, GPL-3.0 licensed. This repo is GPL-3.0 for that reason.
-- [UECast](https://github.com/o-Astral-o/UECast) by Astral
-- [Saluki](https://github.com/Scobalula/Saluki) by Scobalula / echo000
+- **[Scobalula](https://github.com/Scobalula)** — [GameImageUtil](https://github.com/Scobalula/GameImageUtil) and [Saluki](https://github.com/Scobalula/Saluki). `cod_texture_split.py` is a direct Python port of GameImageUtil's `CoDNOGProcessor` and `CoDFusedCSProcessor`, GPL-3.0 licensed — this repo is GPL-3.0 for that reason.
+- **[Astral](https://github.com/o-Astral-o)** — [UECast](https://github.com/o-Astral-o/UECast)
 
-## License
+---
 
-GPL-3.0. See [LICENSE](LICENSE).
+**Please contact me if you find any bugs or have any suggestions.**
+#### Twitter: @thatkidpolito
+#### Discord: polito#2491
