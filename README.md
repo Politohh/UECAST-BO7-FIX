@@ -40,7 +40,7 @@ None of this is a bug in Saluki's export — it labels what it doesn't know gene
 
 ## ELI5
 
-BO7 broke a tool called UECast. When you import a BO7 character into Unreal Engine, the textures get put in the wrong places — the color texture ends up somewhere it shouldn't, the normal map (the bumpy detail texture) ends up somewhere else, and the actual color slot is just... empty. Black.
+When you import a BO7 character into Unreal Engine, the textures get put in the wrong places — the color texture ends up somewhere it shouldn't, the normal map (the bumpy detail texture) ends up somewhere else, and the actual color slot is just... empty. Black.
 
 This happens because UECast decides where each texture goes by reading a little tag baked into the file that says "I'm the color one" or "I'm the normal one." For BO7, those tags got scrambled, and the person who makes UECast isn't planning to fix it.
 
