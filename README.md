@@ -13,6 +13,7 @@
 
 <p align="center">
   <a href="#the-problem">The problem</a> •
+  <a href="#eli5">ELI5</a> •
   <a href="#how-it-works">How it works</a> •
   <a href="#requirements">Requirements</a> •
   <a href="#installation">Installation</a> •
@@ -34,6 +35,22 @@ For Black Ops 7, that semantic table changed upstream, and UECast's own table (h
 - Textures can also get imported with the wrong compression settings / sRGB flag, since UECast decides those from the same stale table
 
 None of this is a bug in Saluki's export — it labels what it doesn't know generically (`unk_semantic_X`, `extra0`...`extraN`) rather than guessing wrong. The mislabeling happens entirely on UECast's side. Confirmed with the UECast author: this isn't planned to be fixed upstream, hence this repo.
+
+---
+
+## ELI5
+
+BO7 broke a tool called UECast. When you import a BO7 character into Unreal Engine, the textures get put in the wrong places — the color texture ends up somewhere it shouldn't, the normal map (the bumpy detail texture) ends up somewhere else, and the actual color slot is just... empty. Black.
+
+This happens because UECast decides where each texture goes by reading a little tag baked into the file that says "I'm the color one" or "I'm the normal one." For BO7, those tags got scrambled, and the person who makes UECast isn't planning to fix it.
+
+So this tool fixes it for you automatically:
+
+1. It looks at your messed-up materials and figures out where the *real* color and normal textures actually ended up (they're always in the same wrong spots, just consistently wrong, so it can find them).
+2. It grabs the original texture files from your export folder and runs the correct math on them to split out the real color and normal maps properly.
+3. It puts everything back where it's supposed to go, on a clean simple material.
+
+You select your character in Unreal, run one script, pick a folder once, and it does all of that by itself. That's it.
 
 ---
 
@@ -106,7 +123,7 @@ python cod_texture_split.py "<path to a _gameimageutil_staging folder>"
 - Assumes the `nogMap` → real color / `emissiveMap` → real NOG pattern holds. This was consistent across every model tested, but a different shader techset could theoretically break that assumption — if a converted material comes out wrong, check what's actually bound to those two slots before assuming the script is at fault.
 - Only wires up `colorMap`/`normalMap`. Gloss, occlusion, and specular are computed as part of the split (and written to disk) but not currently used downstream, since `CoDBase` doesn't expose them.
 - If a texture's alpha channel carries no real per-pixel data (some exports have it flattened to a constant), the specular/albedo split falls back to passing RGB straight through rather than applying the metalness math, which would otherwise force the whole texture to black.
-- Tested specifically on BO7 exports. Other post-IW8 titles weren't verified.
+- Tested specifically on BO7 exports.
 
 ---
 
