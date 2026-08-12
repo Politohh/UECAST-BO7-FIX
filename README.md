@@ -14,6 +14,7 @@
 <p align="center">
   <a href="#the-problem">The problem</a> •
   <a href="#eli5">ELI5</a> •
+  <a href="#preview">Preview</a> •
   <a href="#how-it-works">How it works</a> •
   <a href="#requirements">Requirements</a> •
   <a href="#installation">Installation</a> •
@@ -40,7 +41,7 @@ None of this is a bug in Saluki's export — it labels what it doesn't know gene
 
 ## ELI5
 
-When you import a BO7 character into Unreal Engine, the textures get put in the wrong places — the color texture ends up somewhere it shouldn't, the normal map (the bumpy detail texture) ends up somewhere else, and the actual color slot is just... empty. Black.
+BO7 broke a tool called UECast. When you import a BO7 character into Unreal Engine, the textures get put in the wrong places — the color texture ends up somewhere it shouldn't, the normal map (the bumpy detail texture) ends up somewhere else, and the actual color slot is just... empty. Black.
 
 This happens because UECast decides where each texture goes by reading a little tag baked into the file that says "I'm the color one" or "I'm the normal one." For BO7, those tags got scrambled, and the person who makes UECast isn't planning to fix it.
 
@@ -51,6 +52,18 @@ So this tool fixes it for you automatically:
 3. It puts everything back where it's supposed to go, on a clean simple material.
 
 You select your character in Unreal, run one script, pick a folder once, and it does all of that by itself. That's it.
+
+---
+
+## Preview
+
+**Before** — freshly imported via UECast, textures scrambled
+
+<img src="https://raw.githubusercontent.com/Politohh/UECAST-BO7-FIX/main/before.png">
+
+**After** — same mesh, after running `UECAST-BO7-FIX.py`
+
+<img src="https://raw.githubusercontent.com/Politohh/UECAST-BO7-FIX/main/after.png">
 
 ---
 
@@ -120,8 +133,9 @@ python cod_texture_split.py "<path to a _gameimageutil_staging folder>"
 
 ## Known limitations
 
+- **Specular output looks wrong when actually used.** The split math also produces a `_s` (specular) file for every color/albedo texture, ported faithfully from GameImageUtil's own algorithm — but wiring that into a material here produces an overly glossy, "wet-looking" result. The exact cause hasn't been tracked down (could be something specific to how `CoDBase` or the wider material setup handles specular, rather than the split math itself being wrong). Because of this, the pipeline deliberately never wires up `specularMap` — only `colorMap`/`normalMap` — and the `_s` files just sit unused on disk. If you want to use specular, treat it as experimental and expect to need extra tuning.
 - Assumes the `nogMap` → real color / `emissiveMap` → real NOG pattern holds. This was consistent across every model tested, but a different shader techset could theoretically break that assumption — if a converted material comes out wrong, check what's actually bound to those two slots before assuming the script is at fault.
-- Only wires up `colorMap`/`normalMap`. Gloss, occlusion, and specular are computed as part of the split (and written to disk) but not currently used downstream, since `CoDBase` doesn't expose them.
+- Only wires up `colorMap`/`normalMap`. Gloss and occlusion are computed as part of the split (and written to disk) but not currently used downstream, since `CoDBase` doesn't expose them.
 - If a texture's alpha channel carries no real per-pixel data (some exports have it flattened to a constant), the specular/albedo split falls back to passing RGB straight through rather than applying the metalness math, which would otherwise force the whole texture to black.
 - Tested specifically on BO7 exports.
 
