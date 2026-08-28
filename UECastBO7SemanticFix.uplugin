@@ -1,0 +1,20 @@
+{
+  "FileVersion": 3,
+  "Version": 2,
+  "VersionName": "1.1.0",
+  "FriendlyName": "UECast BO7 Semantic Fix",
+  "Description": "Reconstructs BO7 albedo and normals and repairs materials already imported by UECast.",
+  "Category": "Importers",
+  "CreatedBy": "Polito",
+  "EngineVersion": "5.7.0",
+  "CanContainContent": false,
+  "IsBetaVersion": true,
+  "Installed": false,
+  "Modules": [
+    {
+      "Name": "UECastBO7SemanticFix",
+      "Type": "Editor",
+      "LoadingPhase": "Default"
+    }
+  ]
+}
