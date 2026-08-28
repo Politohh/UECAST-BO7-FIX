@@ -18,7 +18,7 @@ This plugin repairs already-imported assets without modifying UECast or requirin
 
 | Before | After |
 | --- | --- |
-| ![Broken UECast BO7 import](before.png) | ![Repaired BO7 materials](after.png) |
+| ![Broken UECast BO7 import](bo7-before-v1.1.0.png) | ![Repaired BO7 materials](bo7-after-v1.1.0.png) |
 
 ## What the plugin does
 
